@@ -10,7 +10,7 @@ RUN go build -v -trimpath
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-FROM spritsail/alpine:3.20
+FROM registry.spritsail.io/spritsail/alpine:3.22
 
 LABEL org.opencontainers.image.authors="Joe Groocock <jool-exporter@frebib.net>" \
       org.opencontainers.image.title="Prometheus Jool NAT64 exporter" \
