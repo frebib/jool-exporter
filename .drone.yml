@@ -1,0 +1,72 @@
+---
+kind: pipeline
+name: tests
+
+steps:
+- name: go tests
+  image: golang:alpine
+  commands:
+  - go build -o jool-exporter
+
+  - go install golang.org/x/tools/cmd/goimports@latest
+  - go install golang.org/x/lint/golint@latest
+  - test -z "$(gofmt -l . | tee /dev/stderr)"
+  - test -z "$(goimports -local -e -d . | tee /dev/stderr)"
+  - golint ./...
+
+---
+kind: pipeline
+name: docker
+
+depends_on:
+- tests
+
+steps:
+- name: docker build
+  image: registry.spritsail.io/spritsail/docker-build
+  pull: always
+
+- name: docker publish spritsail
+  image: registry.spritsail.io/spritsail/docker-publish
+  pull: always
+  settings:
+    registry: registry.spritsail.io
+    login: {from_secret: spritsail_login}
+    repo: frebib/jool-exporter
+    tags: &tags
+    - latest
+    - '%label org.label-schema.version'
+  depends_on:
+    - docker build
+  when:
+    branch:
+    - master
+    event:
+    - push
+
+---
+kind: pipeline
+name: update-readme
+
+depends_on:
+- docker
+
+steps:
+- name: dockerhub-readme
+  pull: always
+  image: jlesage/drone-push-readme
+  settings:
+    username: {from_secret: docker_username}
+    password: {from_secret: docker_password}
+    repo: frebib/jool-exporter
+  when:
+    branch:
+    - master
+    event:
+    - push
+
+---
+kind: signature
+hmac: b7cc81513cc3e1112d54d30f795054dd7fd053101c1a26c97cf916c6865ae87d
+
+...
